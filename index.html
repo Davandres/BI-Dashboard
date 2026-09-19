@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElectroMax - Advanced BI Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            uio: '#3b82f6', /* Blue 500 */
+                            gye: '#f97316', /* Orange 500 */
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- ApexCharts JS -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* slate-900 */
+            color: #f8fafc; /* slate-50 */
+        }
+        
+        /* Personalización de Scrollbar para tema oscuro */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        /* Ajustes Leaflet Tema Oscuro */
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background-color: #1e293b !important;
+            color: #f8fafc !important;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Contenedor del mapa */
+        #map {
+            border-radius: 0.75rem;
+            z-index: 10;
+        }
+
+        /* Marker personalizado para Leaflet */
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+    </style>
+</head>
+<body class="antialiased h-screen flex flex-col overflow-x-hidden">
+
+    <header class="bg-slate-800 border-b border-slate-700 h-16 flex items-center justify-between px-6 shrink-0 z-20 sticky top-0 shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-700">
+                <i class="fa-solid fa-bolt text-yellow-400 text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">Electro<span class="text-brand-uio">Max</span> BI</h1>
+                <p class="text-xs text-slate-400 -mt-1">Red Distribuida Nacional</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <span class="text-xs font-medium text-slate-400 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-700">
+                <i class="fa-solid fa-circle text-emerald-400 text-[10px] mr-1 animate-pulse"></i> Nodos Sincronizados
+            </span>
+            <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600">
+                <i class="fa-solid fa-user text-sm text-slate-300"></i>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto space-y-6">
+        
+        <!-- KPIs Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- KPI 1: Ingresos -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-lg relative overflow-hidden group hover:border-slate-600 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Ingresos Totales</p>
+                        <h3 class="text-3xl font-bold text-white mt-1">$482,950</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <i class="fa-solid fa-dollar-sign"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-emerald-400 mb-2"><i class="fa-solid fa-arrow-up mr-1"></i> +15.3% vs mes anterior</p>
+                <div id="spark1" class="-ml-2 -mr-2"></div>
+            </div>
+
+            <!-- KPI 2: Unidades -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-lg relative overflow-hidden group hover:border-slate-600 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Unidades Despachadas</p>
+                        <h3 class="text-3xl font-bold text-white mt-1">3,842</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-brand-uio/20 text-brand-uio flex items-center justify-center">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-brand-uio mb-2"><i class="fa-solid fa-arrow-up mr-1"></i> +8.1% vs mes anterior</p>
+                <div id="spark2" class="-ml-2 -mr-2"></div>
+            </div>
+
+            <!-- KPI 3: Clientes -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-lg relative overflow-hidden group hover:border-slate-600 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Clientes Activos</p>
+                        <h3 class="text-3xl font-bold text-white mt-1">12,450</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-purple-400 mb-2"><i class="fa-solid fa-arrow-up mr-1"></i> +4.2% vs mes anterior</p>
+                <div id="spark3" class="-ml-2 -mr-2"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Mapa Leaflet -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-lg flex flex-col overflow-hidden">
+                <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800 z-20">
+                    <h2 class="text-lg font-semibold text-white">Geografía de Nodos y Stock</h2>
+                    <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">Tiempo Real</span>
+                </div>
+                <div class="p-2 flex-1 relative bg-slate-900">
+                    <div id="map" class="w-full h-full min-h-[350px]"></div>
+                </div>
+            </div>
+
+            <!-- Radial Bar Chart -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-lg p-5">
+                <h2 class="text-lg font-semibold text-white mb-1">Cumplimiento de Meta Comercial</h2>
+                <p class="text-sm text-slate-400 mb-4">Progreso anual por sede (Target: $500k / Nodo)</p>
+                <div id="radialChart" class="flex justify-center items-center h-[300px]"></div>
+                
+                <!-- Leyenda Personalizada -->
+                <div class="flex justify-center gap-6 mt-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-brand-uio"></div>
+                        <span class="text-sm text-slate-300">UIO (Quito)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-brand-gye"></div>
+                        <span class="text-sm text-slate-300">GYE (Guayaquil)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
+            
+            <!-- Area Chart (Tendencia Mensual) -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-lg p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-white">Tendencia de Ingresos Mensuales</h2>
+                        <p class="text-sm text-slate-400">Comparativa de ventas UIO vs GYE (USD)</p>
+                    </div>
+                    <button class="text-slate-400 hover:text-white"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                </div>
+                <div id="areaChart" class="h-[300px]"></div>
+            </div>
+
+            <!-- Stacked Bar Chart (Inventario por Categoría) -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-lg p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-white">Inventario por Categoría</h2>
+                        <p class="text-sm text-slate-400">Distribución de stock físico en bodegas</p>
+                    </div>
+                    <button class="text-slate-400 hover:text-white"><i class="fa-solid fa-filter"></i></button>
+                </div>
+                <div id="barChart" class="h-[300px]"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            /* ==========================================
+               1. CONFIGURACIÓN DEL MAPA LEAFLET
+               ========================================== */
+            // Coordenadas: Centro de Ecuador [-1.83, -78.18]
+            const map = L.map('map', {
+                center: [-1.43, -78.18], // Ligeramente ajustado para encuadre
+                zoom: 6,
+                zoomControl: false // Desactivamos el default para un look mas limpio
+            });
+            
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // Capa de mapa oscuro (CartoDB Dark Matter)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            // Iconos personalizados con CSS
+            const uioIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="width: 16px; height: 16px; background-color: #3b82f6; border-radius: 50%;"></div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+
+            const gyeIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="width: 16px; height: 16px; background-color: #f97316; border-radius: 50%;"></div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+
+            // Marcador UIO (Quito)
+            const markerUIO = L.marker([-0.2298, -78.5249], {icon: uioIcon}).addTo(map);
+            markerUIO.bindPopup(`
+                <div class="text-center p-1">
+                    <h4 class="font-bold text-white text-sm border-b border-slate-600 pb-1 mb-2">NODO UIO - Quito</h4>
+                    <p class="text-xs text-slate-300 mb-1">Ingresos YTD: <strong class="text-brand-uio">$268,400</strong></p>
+                    <p class="text-xs text-slate-300">Stock Activo: <strong>3,450 unds</strong></p>
+                </div>
+            `);
+
+            // Marcador GYE (Guayaquil)
+            const markerGYE = L.marker([-2.1961, -79.8862], {icon: gyeIcon}).addTo(map);
+            markerGYE.bindPopup(`
+                <div class="text-center p-1">
+                    <h4 class="font-bold text-white text-sm border-b border-slate-600 pb-1 mb-2">NODO GYE - Guayaquil</h4>
+                    <p class="text-xs text-slate-300 mb-1">Ingresos YTD: <strong class="text-brand-gye">$214,550</strong></p>
+                    <p class="text-xs text-slate-300">Stock Activo: <strong>3,890 unds</strong></p>
+                </div>
+            `);
+
+            /* ==========================================
+               2. CONFIGURACIÓN GLOBAL APEXCHARTS
+               ========================================== */
+            const commonOptions = {
+                chart: { 
+                    fontFamily: 'Inter, sans-serif',
+                    background: 'transparent',
+                    toolbar: { show: false }
+                },
+                theme: { mode: 'dark' },
+                tooltip: {
+                    theme: 'dark',
+                    style: { fontSize: '12px' }
+                }
+            };
+
+            /* ==========================================
+               3. SPARKLINE CHARTS (KPIs)
+               ========================================== */
+            const sparklineData1 = [45, 52, 38, 45, 49, 60, 72, 65, 78, 85, 92];
+            const sparklineData2 = [30, 40, 35, 50, 49, 60, 70, 91, 105, 95, 112];
+            const sparklineData3 = [100, 110, 105, 120, 125, 130, 140, 135, 150, 160, 165];
+
+            const sparklineBase = {
+                ...commonOptions,
+                chart: { type: 'area', height: 60, sparkline: { enabled: true } },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: {
+                    type: 'gradient',
+                    gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0, stops: [0, 100] }
+                }
+            };
+
+            new ApexCharts(document.querySelector("#spark1"), {
+                ...sparklineBase, colors: ['#10b981'], series: [{ data: sparklineData1 }]
+            }).render();
+
+            new ApexCharts(document.querySelector("#spark2"), {
+                ...sparklineBase, colors: ['#3b82f6'], series: [{ data: sparklineData2 }]
+            }).render();
+
+            new ApexCharts(document.querySelector("#spark3"), {
+                ...sparklineBase, colors: ['#a855f7'], series: [{ data: sparklineData3 }]
+            }).render();
+
+            /* ==========================================
+               4. RADIAL BAR CHART (Metas)
+               ========================================== */
+            const radialOptions = {
+                ...commonOptions,
+                series: [88, 76], // Porcentaje de cumplimiento UIO, GYE
+                chart: { height: 320, type: 'radialBar' },
+                colors: ['#3b82f6', '#f97316'],
+                plotOptions: {
+                    radialBar: {
+                        hollow: { size: '45%', background: 'transparent' },
+                        track: { background: '#1e293b', strokeWidth: '100%', margin: 15 },
+                        dataLabels: {
+                            name: { fontSize: '16px', color: '#94a3b8' },
+                            value: { fontSize: '24px', color: '#f8fafc', fontWeight: 700, formatter: (val) => val + "%" },
+                            total: {
+                                show: true,
+                                label: 'Global',
+                                color: '#94a3b8',
+                                formatter: function (w) {
+                                    return "82%";
+                                }
+                            }
+                        }
+                    }
+                },
+                labels: ['Nodo UIO', 'Nodo GYE'],
+            };
+            new ApexCharts(document.querySelector("#radialChart"), radialOptions).render();
+
+            /* ==========================================
+               5. AREA CHART (Tendencia de Ingresos)
+               ========================================== */
+            const areaOptions = {
+                ...commonOptions,
+                series: [
+                    { name: 'UIO', data: [31000, 40000, 28000, 51000, 42000, 69000, 85000] },
+                    { name: 'GYE', data: [21000, 26000, 45000, 32000, 34000, 52000, 68000] }
+                ],
+                chart: { height: 300, type: 'area', parentHeightOffset: 0 },
+                colors: ['#3b82f6', '#f97316'],
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: {
+                    type: 'gradient',
+                    gradient: { shadeIntensity: 1, inverseColors: false, opacityFrom: 0.4, opacityTo: 0.1, stops: [0, 90, 100] }
+                },
+                xaxis: {
+                    categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul'],
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                yaxis: {
+                    labels: {
+                        style: { colors: '#94a3b8' },
+                        formatter: (value) => { return "$" + (value/1000) + "k" }
+                    }
+                },
+                grid: { borderColor: '#334155', strokeDashArray: 4, yaxis: { lines: { show: true } } },
+                legend: { position: 'top', horizontalAlign: 'right', labels: { colors: '#f8fafc' } }
+            };
+            new ApexCharts(document.querySelector("#areaChart"), areaOptions).render();
+
+            /* ==========================================
+               6. STACKED BAR CHART (Inventario)
+               ========================================== */
+            const barOptions = {
+                ...commonOptions,
+                series: [
+                    { name: 'UIO', data: [420, 350, 280, 150, 190] },
+                    { name: 'GYE', data: [380, 410, 220, 180, 260] }
+                ],
+                chart: { type: 'bar', height: 300, stacked: true, parentHeightOffset: 0 },
+                colors: ['#3b82f6', '#f97316'],
+                plotOptions: {
+                    bar: { horizontal: false, borderRadius: 4, borderRadiusApplication: 'end', columnWidth: '40%' }
+                },
+                dataLabels: { enabled: false },
+                xaxis: {
+                    categories: ['Refrigeración', 'TV/Video', 'Lavado', 'Laptops', 'Audio'],
+                    labels: { style: { colors: '#94a3b8' } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: {
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                grid: { borderColor: '#334155', strokeDashArray: 4 },
+                legend: { position: 'top', horizontalAlign: 'right', labels: { colors: '#f8fafc' } }
+            };
+            new ApexCharts(document.querySelector("#barChart"), barOptions).render();
+            
+        });
+    </script>
+</body>
+</html>
