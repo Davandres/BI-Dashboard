@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BI Dashboard - ElectroMax</title>
+    <title>ElectroMax - Advanced BI Dashboard</title>
     
-    <!-- Fuentes -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Iconos -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Tailwind CSS (CDN) -->
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -22,11 +26,8 @@
                     },
                     colors: {
                         brand: {
-                            dark: '#0f172a',    /* Slate 900 */
-                            light: '#1e293b',   /* Slate 800 */
-                            primary: '#2563eb', /* Blue 600 - UIO */
-                            accent: '#f97316',  /* Orange 500 - GYE */
-                            surface: '#f8fafc',
+                            uio: '#3b82f6', /* Blue 500 */
+                            gye: '#f97316', /* Orange 500 */
                         }
                     }
                 }
@@ -34,399 +35,399 @@
         }
     </script>
     
-    <!-- Chart.js (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- ApexCharts JS -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <style>
-        /* Estilos base para asegurar responsividad en los gráficos */
-        .chart-container {
-            position: relative;
-            height: 300px;
-            width: 100%;
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* slate-900 */
+            color: #f8fafc; /* slate-50 */
         }
         
-        /* Ocultar barra de desplazamiento manteniendo funcionalidad */
+        /* Personalización de Scrollbar para tema oscuro */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
+            background: #1e293b; 
         }
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 10px;
+            background: #475569; 
+            border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
+            background: #64748b; 
+        }
+
+        /* Ajustes Leaflet Tema Oscuro */
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background-color: #1e293b !important;
+            color: #f8fafc !important;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Contenedor del mapa */
+        #map {
+            border-radius: 0.75rem;
+            z-index: 10;
+        }
+
+        /* Marker personalizado para Leaflet */
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
         }
     </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased overflow-hidden flex h-screen">
+<body class="antialiased h-screen flex flex-col overflow-x-hidden">
 
-    <aside class="w-64 bg-brand-dark text-white flex flex-col hidden md:flex transition-all duration-300">
-        <div class="h-16 flex items-center px-6 border-b border-brand-light">
-            <i class="fa-solid fa-bolt text-brand-accent text-xl mr-2"></i>
-            <span class="text-xl font-bold tracking-wider">Electro<span class="text-brand-primary text-blue-400">Max</span></span>
-        </div>
-        
-        <div class="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-4">
-            Análisis Distribuido
-        </div>
-        
-        <nav class="flex-1 px-4 space-y-2">
-            <a href="#" class="flex items-center px-4 py-3 bg-brand-primary rounded-lg text-white font-medium transition-colors">
-                <i class="fa-solid fa-chart-pie w-6"></i>
-                Visión Global
-            </a>
-            <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-brand-light rounded-lg transition-colors">
-                <i class="fa-solid fa-boxes-stacked w-6"></i>
-                Inventario
-            </a>
-            <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-brand-light rounded-lg transition-colors">
-                <i class="fa-solid fa-sack-dollar w-6"></i>
-                Ventas Regionales
-            </a>
-            <a href="#" class="flex items-center px-4 py-3 text-slate-300 hover:bg-brand-light rounded-lg transition-colors">
-                <i class="fa-solid fa-users w-6"></i>
-                Cartera de Clientes
-            </a>
-        </nav>
-        
-        <div class="p-4 border-t border-brand-light">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center">
-                    <i class="fa-solid fa-user text-sm"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-medium">Gerencia General</p>
-                    <p class="text-xs text-slate-400">Acceso Total</p>
-                </div>
+    <header class="bg-slate-800 border-b border-slate-700 h-16 flex items-center justify-between px-6 shrink-0 z-20 sticky top-0 shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-700">
+                <i class="fa-solid fa-bolt text-yellow-400 text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">Electro<span class="text-brand-uio">Max</span> BI</h1>
+                <p class="text-xs text-slate-400 -mt-1">Red Distribuida Nacional</p>
             </div>
         </div>
-    </aside>
-
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Top Header -->
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
-            <div class="flex items-center gap-4">
-                <button class="md:hidden text-slate-500 hover:text-slate-700">
-                    <i class="fa-solid fa-bars text-xl"></i>
-                </button>
-                <h1 class="text-2xl font-semibold text-slate-800">Dashboard Gerencial</h1>
+        
+        <div class="flex items-center gap-4">
+            <span class="text-xs font-medium text-slate-400 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-700">
+                <i class="fa-solid fa-circle text-emerald-400 text-[10px] mr-1 animate-pulse"></i> Nodos Sincronizados
+            </span>
+            <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600">
+                <i class="fa-solid fa-user text-sm text-slate-300"></i>
             </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 overflow-y-auto w-full max-w-7xl mx-auto space-y-6">
+        
+        <!-- KPIs Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <div class="flex items-center gap-6">
-                <div class="relative">
-                    <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" placeholder="Buscar factura, sede..." class="pl-10 pr-4 py-2 border border-slate-200 rounded-full bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-shadow w-64 hidden sm:block">
+            <!-- KPI 1: Ingresos -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-lg relative overflow-hidden group hover:border-slate-600 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Ingresos Totales</p>
+                        <h3 class="text-3xl font-bold text-white mt-1">$482,950</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <i class="fa-solid fa-dollar-sign"></i>
+                    </div>
                 </div>
+                <p class="text-xs text-emerald-400 mb-2"><i class="fa-solid fa-arrow-up mr-1"></i> +15.3% vs mes anterior</p>
+                <div id="spark1" class="-ml-2 -mr-2"></div>
+            </div>
+
+            <!-- KPI 2: Unidades -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-lg relative overflow-hidden group hover:border-slate-600 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Unidades Despachadas</p>
+                        <h3 class="text-3xl font-bold text-white mt-1">3,842</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-brand-uio/20 text-brand-uio flex items-center justify-center">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-brand-uio mb-2"><i class="fa-solid fa-arrow-up mr-1"></i> +8.1% vs mes anterior</p>
+                <div id="spark2" class="-ml-2 -mr-2"></div>
+            </div>
+
+            <!-- KPI 3: Clientes -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-lg relative overflow-hidden group hover:border-slate-600 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <p class="text-sm font-medium text-slate-400">Clientes Activos</p>
+                        <h3 class="text-3xl font-bold text-white mt-1">12,450</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-purple-400 mb-2"><i class="fa-solid fa-arrow-up mr-1"></i> +4.2% vs mes anterior</p>
+                <div id="spark3" class="-ml-2 -mr-2"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Mapa Leaflet -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-lg flex flex-col overflow-hidden">
+                <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800 z-20">
+                    <h2 class="text-lg font-semibold text-white">Geografía de Nodos y Stock</h2>
+                    <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">Tiempo Real</span>
+                </div>
+                <div class="p-2 flex-1 relative bg-slate-900">
+                    <div id="map" class="w-full h-full min-h-[350px]"></div>
+                </div>
+            </div>
+
+            <!-- Radial Bar Chart -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-lg p-5">
+                <h2 class="text-lg font-semibold text-white mb-1">Cumplimiento de Meta Comercial</h2>
+                <p class="text-sm text-slate-400 mb-4">Progreso anual por sede (Target: $500k / Nodo)</p>
+                <div id="radialChart" class="flex justify-center items-center h-[300px]"></div>
                 
-                <div class="flex items-center gap-4 text-slate-500">
-                    <button class="hover:text-brand-primary transition-colors relative">
-                        <i class="fa-regular fa-bell text-xl"></i>
-                        <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
-                    </button>
+                <!-- Leyenda Personalizada -->
+                <div class="flex justify-center gap-6 mt-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-brand-uio"></div>
+                        <span class="text-sm text-slate-300">UIO (Quito)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-brand-gye"></div>
+                        <span class="text-sm text-slate-300">GYE (Guayaquil)</span>
+                    </div>
                 </div>
             </div>
-        </header>
+        </div>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
             
-            <!-- Última actualización -->
-            <div class="flex justify-end mb-4">
-                <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Datos sincronizados hace 5 min
-                </span>
+            <!-- Area Chart (Tendencia Mensual) -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-lg p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-white">Tendencia de Ingresos Mensuales</h2>
+                        <p class="text-sm text-slate-400">Comparativa de ventas UIO vs GYE (USD)</p>
+                    </div>
+                    <button class="text-slate-400 hover:text-white"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                </div>
+                <div id="areaChart" class="h-[300px]"></div>
             </div>
 
-            <!-- KPI Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- KPI 1 -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
-                    <div class="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
-                        <i class="fa-solid fa-dollar-sign text-xl"></i>
-                    </div>
+            <!-- Stacked Bar Chart (Inventario por Categoría) -->
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-lg p-5">
+                <div class="flex justify-between items-center mb-4">
                     <div>
-                        <p class="text-sm font-medium text-slate-500">Ingresos Totales</p>
-                        <h3 class="text-2xl font-bold text-slate-800">$ 258,450</h3>
-                        <p class="text-xs text-emerald-500 mt-1"><i class="fa-solid fa-arrow-trend-up mr-1"></i> +12.5% mes actual</p>
+                        <h2 class="text-lg font-semibold text-white">Inventario por Categoría</h2>
+                        <p class="text-sm text-slate-400">Distribución de stock físico en bodegas</p>
                     </div>
+                    <button class="text-slate-400 hover:text-white"><i class="fa-solid fa-filter"></i></button>
                 </div>
-
-                <!-- KPI 2 -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
-                    <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                        <i class="fa-solid fa-cart-shopping text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-slate-500">Unidades Vendidas</p>
-                        <h3 class="text-2xl font-bold text-slate-800">1,842</h3>
-                        <p class="text-xs text-blue-500 mt-1"><i class="fa-solid fa-arrow-trend-up mr-1"></i> +8.2% mes actual</p>
-                    </div>
-                </div>
-
-                <!-- KPI 3 -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
-                    <div class="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
-                        <i class="fa-solid fa-users text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-slate-500">Clientes Registrados</p>
-                        <h3 class="text-2xl font-bold text-slate-800">2,450</h3>
-                        <p class="text-xs text-slate-400 mt-1">Nodos UIO & GYE</p>
-                    </div>
-                </div>
-
-                <!-- KPI 4 -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
-                    <div class="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-                        <i class="fa-solid fa-warehouse text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-slate-500">Stock Global</p>
-                        <h3 class="text-2xl font-bold text-slate-800">6,900</h3>
-                        <p class="text-xs text-slate-400 mt-1">Disponibilidad total</p>
-                    </div>
-                </div>
+                <div id="barChart" class="h-[300px]"></div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <!-- Bar Chart: Stock by Category (Takes up 2 columns) -->
-                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 class="text-lg font-semibold text-slate-800">Stock Disponible por Categoría</h2>
-                            <p class="text-sm text-slate-500">Comparativa de inventario entre nodos UIO y GYE</p>
-                        </div>
-                        <button class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="stockChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Donut Chart: Revenue Share (Takes up 1 column) -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 class="text-lg font-semibold text-slate-800">Ingresos por Sede</h2>
-                            <p class="text-sm text-slate-500">Distribución de facturación</p>
-                        </div>
-                        <button class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                    </div>
-                    <div class="chart-container flex-1 relative flex justify-center items-center">
-                        <canvas id="revenueChart"></canvas>
-                        <!-- Center text overlay for donut -->
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-4">
-                            <span class="text-2xl font-bold text-slate-800">$258k</span>
-                            <span class="text-xs text-slate-500">Total</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                    <h2 class="text-lg font-semibold text-slate-800">Últimas Transacciones</h2>
-                    <button class="text-sm text-brand-primary font-medium hover:underline">Ver reporte completo</button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="text-xs text-slate-500 bg-slate-50 uppercase font-semibold">
-                            <tr>
-                                <th scope="col" class="px-6 py-4">Num Factura</th>
-                                <th scope="col" class="px-6 py-4">Fecha</th>
-                                <th scope="col" class="px-6 py-4">Nodo (Sede)</th>
-                                <th scope="col" class="px-6 py-4">Cód. Electro</th>
-                                <th scope="col" class="px-6 py-4">Categoría</th>
-                                <th scope="col" class="px-6 py-4 text-center">Cantidad</th>
-                                <th scope="col" class="px-6 py-4 text-right">Monto</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 text-slate-700">
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="px-6 py-4 font-medium text-slate-900">#F-100245</td>
-                                <td class="px-6 py-4">19 Sep 2026</td>
-                                <td class="px-6 py-4"><span class="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-md border border-blue-200">UIO</span></td>
-                                <td class="px-6 py-4 font-mono text-slate-500">E-012</td>
-                                <td class="px-6 py-4">Refrigeración</td>
-                                <td class="px-6 py-4 text-center font-medium">1</td>
-                                <td class="px-6 py-4 text-right font-medium text-slate-900">$ 850.00</td>
-                            </tr>
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="px-6 py-4 font-medium text-slate-900">#F-900882</td>
-                                <td class="px-6 py-4">19 Sep 2026</td>
-                                <td class="px-6 py-4"><span class="bg-orange-100 text-orange-700 text-xs font-bold px-2.5 py-1 rounded-md border border-orange-200">GYE</span></td>
-                                <td class="px-6 py-4 font-mono text-slate-500">E-045</td>
-                                <td class="px-6 py-4">Televisores</td>
-                                <td class="px-6 py-4 text-center font-medium">2</td>
-                                <td class="px-6 py-4 text-right font-medium text-slate-900">$ 1,200.00</td>
-                            </tr>
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="px-6 py-4 font-medium text-slate-900">#F-100246</td>
-                                <td class="px-6 py-4">18 Sep 2026</td>
-                                <td class="px-6 py-4"><span class="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-md border border-blue-200">UIO</span></td>
-                                <td class="px-6 py-4 font-mono text-slate-500">E-088</td>
-                                <td class="px-6 py-4">Pequeños Electrodomésticos</td>
-                                <td class="px-6 py-4 text-center font-medium">3</td>
-                                <td class="px-6 py-4 text-right font-medium text-slate-900">$ 135.00</td>
-                            </tr>
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="px-6 py-4 font-medium text-slate-900">#F-900883</td>
-                                <td class="px-6 py-4">18 Sep 2026</td>
-                                <td class="px-6 py-4"><span class="bg-orange-100 text-orange-700 text-xs font-bold px-2.5 py-1 rounded-md border border-orange-200">GYE</span></td>
-                                <td class="px-6 py-4 font-mono text-slate-500">E-019</td>
-                                <td class="px-6 py-4">Lavado y Secado</td>
-                                <td class="px-6 py-4 text-center font-medium">1</td>
-                                <td class="px-6 py-4 text-right font-medium text-slate-900">$ 620.00</td>
-                            </tr>
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="px-6 py-4 font-medium text-slate-900">#F-100247</td>
-                                <td class="px-6 py-4">17 Sep 2026</td>
-                                <td class="px-6 py-4"><span class="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-md border border-blue-200">UIO</span></td>
-                                <td class="px-6 py-4 font-mono text-slate-500">E-055</td>
-                                <td class="px-6 py-4">Audio y Video</td>
-                                <td class="px-6 py-4 text-center font-medium">1</td>
-                                <td class="px-6 py-4 text-right font-medium text-slate-900">$ 340.00</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <footer class="mt-8 text-center text-sm text-slate-400 pb-4">
-                &copy; 2026 ElectroMax - Sistema de Base de Datos Distribuida
-            </footer>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <script>
-        window.onload = function() {
-            // Configuración común de tipografía para Chart.js
-            Chart.defaults.font.family = "'Inter', sans-serif";
-            Chart.defaults.color = '#64748b'; // slate-500
+        document.addEventListener('DOMContentLoaded', function() {
             
-            // --- Gráfico de Barras Agrupadas: Stock por Categoría ---
-            const ctxStock = document.getElementById('stockChart').getContext('2d');
-            new Chart(ctxStock, {
-                type: 'bar',
-                data: {
-                    labels: ['Refrigeración', 'Televisores', 'Lavado', 'Audio', 'Climatización'],
-                    datasets: [
-                        {
-                            label: 'Nodo Quito (UIO)',
-                            data: [320, 150, 210, 80, 105],
-                            backgroundColor: '#2563eb', // brand-primary
-                            borderRadius: 4,
-                            barPercentage: 0.7,
-                            categoryPercentage: 0.8
-                        },
-                        {
-                            label: 'Nodo Guayaquil (GYE)',
-                            data: [250, 280, 190, 60, 290],
-                            backgroundColor: '#f97316', // brand-accent
-                            borderRadius: 4,
-                            barPercentage: 0.7,
-                            categoryPercentage: 0.8
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            align: 'end',
-                            labels: {
-                                usePointStyle: true,
-                                boxWidth: 8,
-                                font: { size: 12, weight: '500' }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            padding: 12,
-                            titleFont: { size: 13 },
-                            bodyFont: { size: 13 },
-                            cornerRadius: 8
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: '#f1f5f9',
-                                drawBorder: false,
-                            },
-                            ticks: {
-                                padding: 10
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false,
-                                drawBorder: false,
-                            }
-                        }
-                    },
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    }
-                }
+            /* ==========================================
+               1. CONFIGURACIÓN DEL MAPA LEAFLET
+               ========================================== */
+            // Coordenadas: Centro de Ecuador [-1.83, -78.18]
+            const map = L.map('map', {
+                center: [-1.43, -78.18], // Ligeramente ajustado para encuadre
+                zoom: 6,
+                zoomControl: false // Desactivamos el default para un look mas limpio
+            });
+            
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // Capa de mapa oscuro (CartoDB Dark Matter)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            // Iconos personalizados con CSS
+            const uioIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="width: 16px; height: 16px; background-color: #3b82f6; border-radius: 50%;"></div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
             });
 
-            // --- Gráfico de Dona: Ingresos por Sede ---
-            const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
-            new Chart(ctxRevenue, {
-                type: 'doughnut',
-                data: {
-                    labels: ['UIO (Quito)', 'GYE (Guayaquil)'],
-                    datasets: [{
-                        data: [139563, 118887], // 54% y 46% aprox de 258,450
-                        backgroundColor: [
-                            '#2563eb', // brand-primary
-                            '#f97316'  // brand-accent
-                        ],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
+            const gyeIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<div style="width: 16px; height: 16px; background-color: #f97316; border-radius: 50%;"></div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+
+            // Marcador UIO (Quito)
+            const markerUIO = L.marker([-0.2298, -78.5249], {icon: uioIcon}).addTo(map);
+            markerUIO.bindPopup(`
+                <div class="text-center p-1">
+                    <h4 class="font-bold text-white text-sm border-b border-slate-600 pb-1 mb-2">NODO UIO - Quito</h4>
+                    <p class="text-xs text-slate-300 mb-1">Ingresos YTD: <strong class="text-brand-uio">$268,400</strong></p>
+                    <p class="text-xs text-slate-300">Stock Activo: <strong>3,450 unds</strong></p>
+                </div>
+            `);
+
+            // Marcador GYE (Guayaquil)
+            const markerGYE = L.marker([-2.1961, -79.8862], {icon: gyeIcon}).addTo(map);
+            markerGYE.bindPopup(`
+                <div class="text-center p-1">
+                    <h4 class="font-bold text-white text-sm border-b border-slate-600 pb-1 mb-2">NODO GYE - Guayaquil</h4>
+                    <p class="text-xs text-slate-300 mb-1">Ingresos YTD: <strong class="text-brand-gye">$214,550</strong></p>
+                    <p class="text-xs text-slate-300">Stock Activo: <strong>3,890 unds</strong></p>
+                </div>
+            `);
+
+            /* ==========================================
+               2. CONFIGURACIÓN GLOBAL APEXCHARTS
+               ========================================== */
+            const commonOptions = {
+                chart: { 
+                    fontFamily: 'Inter, sans-serif',
+                    background: 'transparent',
+                    toolbar: { show: false }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '75%', // Hace la dona más delgada, estilo BI moderno
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: { size: 12, weight: '500' }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            padding: 12,
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed);
-                                    }
-                                    return label;
+                theme: { mode: 'dark' },
+                tooltip: {
+                    theme: 'dark',
+                    style: { fontSize: '12px' }
+                }
+            };
+
+            /* ==========================================
+               3. SPARKLINE CHARTS (KPIs)
+               ========================================== */
+            const sparklineData1 = [45, 52, 38, 45, 49, 60, 72, 65, 78, 85, 92];
+            const sparklineData2 = [30, 40, 35, 50, 49, 60, 70, 91, 105, 95, 112];
+            const sparklineData3 = [100, 110, 105, 120, 125, 130, 140, 135, 150, 160, 165];
+
+            const sparklineBase = {
+                ...commonOptions,
+                chart: { type: 'area', height: 60, sparkline: { enabled: true } },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: {
+                    type: 'gradient',
+                    gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0, stops: [0, 100] }
+                }
+            };
+
+            new ApexCharts(document.querySelector("#spark1"), {
+                ...sparklineBase, colors: ['#10b981'], series: [{ data: sparklineData1 }]
+            }).render();
+
+            new ApexCharts(document.querySelector("#spark2"), {
+                ...sparklineBase, colors: ['#3b82f6'], series: [{ data: sparklineData2 }]
+            }).render();
+
+            new ApexCharts(document.querySelector("#spark3"), {
+                ...sparklineBase, colors: ['#a855f7'], series: [{ data: sparklineData3 }]
+            }).render();
+
+            /* ==========================================
+               4. RADIAL BAR CHART (Metas)
+               ========================================== */
+            const radialOptions = {
+                ...commonOptions,
+                series: [88, 76], // Porcentaje de cumplimiento UIO, GYE
+                chart: { height: 320, type: 'radialBar' },
+                colors: ['#3b82f6', '#f97316'],
+                plotOptions: {
+                    radialBar: {
+                        hollow: { size: '45%', background: 'transparent' },
+                        track: { background: '#1e293b', strokeWidth: '100%', margin: 15 },
+                        dataLabels: {
+                            name: { fontSize: '16px', color: '#94a3b8' },
+                            value: { fontSize: '24px', color: '#f8fafc', fontWeight: 700, formatter: (val) => val + "%" },
+                            total: {
+                                show: true,
+                                label: 'Global',
+                                color: '#94a3b8',
+                                formatter: function (w) {
+                                    return "82%";
                                 }
                             }
                         }
                     }
-                }
-            });
-        };
+                },
+                labels: ['Nodo UIO', 'Nodo GYE'],
+            };
+            new ApexCharts(document.querySelector("#radialChart"), radialOptions).render();
+
+            /* ==========================================
+               5. AREA CHART (Tendencia de Ingresos)
+               ========================================== */
+            const areaOptions = {
+                ...commonOptions,
+                series: [
+                    { name: 'UIO', data: [31000, 40000, 28000, 51000, 42000, 69000, 85000] },
+                    { name: 'GYE', data: [21000, 26000, 45000, 32000, 34000, 52000, 68000] }
+                ],
+                chart: { height: 300, type: 'area', parentHeightOffset: 0 },
+                colors: ['#3b82f6', '#f97316'],
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: {
+                    type: 'gradient',
+                    gradient: { shadeIntensity: 1, inverseColors: false, opacityFrom: 0.4, opacityTo: 0.1, stops: [0, 90, 100] }
+                },
+                xaxis: {
+                    categories: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul'],
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                yaxis: {
+                    labels: {
+                        style: { colors: '#94a3b8' },
+                        formatter: (value) => { return "$" + (value/1000) + "k" }
+                    }
+                },
+                grid: { borderColor: '#334155', strokeDashArray: 4, yaxis: { lines: { show: true } } },
+                legend: { position: 'top', horizontalAlign: 'right', labels: { colors: '#f8fafc' } }
+            };
+            new ApexCharts(document.querySelector("#areaChart"), areaOptions).render();
+
+            /* ==========================================
+               6. STACKED BAR CHART (Inventario)
+               ========================================== */
+            const barOptions = {
+                ...commonOptions,
+                series: [
+                    { name: 'UIO', data: [420, 350, 280, 150, 190] },
+                    { name: 'GYE', data: [380, 410, 220, 180, 260] }
+                ],
+                chart: { type: 'bar', height: 300, stacked: true, parentHeightOffset: 0 },
+                colors: ['#3b82f6', '#f97316'],
+                plotOptions: {
+                    bar: { horizontal: false, borderRadius: 4, borderRadiusApplication: 'end', columnWidth: '40%' }
+                },
+                dataLabels: { enabled: false },
+                xaxis: {
+                    categories: ['Refrigeración', 'TV/Video', 'Lavado', 'Laptops', 'Audio'],
+                    labels: { style: { colors: '#94a3b8' } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: {
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                grid: { borderColor: '#334155', strokeDashArray: 4 },
+                legend: { position: 'top', horizontalAlign: 'right', labels: { colors: '#f8fafc' } }
+            };
+            new ApexCharts(document.querySelector("#barChart"), barOptions).render();
+            
+        });
     </script>
 </body>
 </html>
